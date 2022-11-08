@@ -30,6 +30,9 @@ uiManager := UIManager
 motion := gpio.Pin 32 --input
 led := gpio.Pin 15 --output
 
+scheme := null
+a_sim := null
+
 main:
 
   task:: jog_task
@@ -76,32 +79,34 @@ bump_sp -> none:
 */
 run_control -> none:
 
-  scheme := Scheme --dT=200
-  a_sim := :: | in out|
-    /* 
-    simulated tank level (out), 0-100 gallons
-    loss is in gpm
-    fill valve (in)(0-100%) results in 0-20gpm inflow
-     */
+  scheme = Scheme --dT=5000
+
+  /* 
+  simulated tank level (out), 0-100 gallons
+  loss is in gpm
+  fill valve (in)(0-100%) results in 0-20gpm inflow
+  */  
+  a_sim = :: | last in|
     loss := random 4 22  
-    out = out + (in/5 - loss)*(scheme.dT/60_000)
+    out := last + (in/5 - loss)*(scheme.dT/60_000)
     min (max 0.0 out) 100.0  // clamp to 0-100
 
-  scheme.add (SimInput --sim=a_sim)     //0
-  scheme.add (PID --dT=scheme.dT)       //1
-  scheme.add SimOutput                  //2
-  fp = (Faceplate --dT=scheme.dT)       
-  scheme.add fp                         //3 
-  bar = (Barchart --dT=scheme.dT)
-  scheme.add bar                        //4
+  scheme.add (SimInput --id="tank_lvl" --sim=a_sim)      //0
+  scheme.add (PID --id="pid01" --dT=scheme.dT)          //1
+  scheme.add (SimOutput --id="fill_vlv")                //2
+  fp = (Faceplate --id="fp01" --dT=scheme.dT)
+  scheme.add fp //3 
+  bar = (Barchart --id="bc01" --dT=scheme.dT)
+  scheme.add bar  //4
   
-  scheme.connect --from=0 --out=0 --to=1 --in=0
-  scheme.connect --from=1 --out=0 --to=2 --in=0
-  scheme.connect --from=2 --out=0 --to=0 --in=0
-  scheme.connect --from=3 --out=0 --to=1 --in=1
-  scheme.connect --from=3 --out=1 --to=1 --in=2
-  scheme.connect --from=0 --out=0 --to=4 --in=0
-
-  (scheme.modules[1] as PID).tune --ks=1 --kp=10.0 --ki=0.0
+  scheme.connect --from="tank_lvl" --out="out" --to="pid01" --in="pv"
+  scheme.connect --from="pid01" --out="out" --to="fill_vlv" --in="co"
+  scheme.connect --from="fill_vlv" --out="out" --to="tank_lvl" --in="sim_in"
+  scheme.connect --from="fp01" --out="sp" --to="pid01" --in="sp"
+  scheme.connect --from="fp01" --out="auto" --to="pid01" --in="auto"
+  scheme.connect --from="tank_lvl" --out="out" --to="fp01" --in="pv"  
+  scheme.connect --from="pid01" --out="out" --to="fp01" --in="a_out"  
+  scheme.connect --from="tank_lvl" --out="out" --to="bc01" --in="in0"
+  ((scheme.module_for --id="pid01") as PID).tune --ks=-1 --kp=10.0 --ki=0.0
   
   scheme.run

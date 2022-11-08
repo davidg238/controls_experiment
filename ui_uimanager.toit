@@ -20,7 +20,7 @@ class UIManager:
 
   event := null
 
-  constructor --display/TrueColorPixelDisplay --.events/Channel --.fp/Faceplate --.bar/UI_Barchart:
+  constructor --display/TrueColorPixelDisplay --.events/Channel --.fp/Faceplate --.bar/Barchart:
     display_ = display
 
   run -> none:

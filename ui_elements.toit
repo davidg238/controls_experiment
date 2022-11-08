@@ -29,6 +29,8 @@ PALETTE ::= #[
 CYAN ::= get_rgb 0x00 0xFF 0xFF
 GREEN ::= get_rgb 0x00 0xFF 0x00
 
+class UI_Barchart:
+
 class UI_Faceplate:
   // These are the variables the operator is to set.
   sp := 50      // Setpoint
@@ -67,7 +69,7 @@ class UI_Faceplate:
     draw_ticks
 
     pv_d = display_.filled_rectangle (txt_context_.with --color=CYAN) pv_d_x pv_d_ymin 4 (-fp_.pv).round
-    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+fp_.output/2) (bry-8)
+    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.output/2).round) (bry-8)
 
     sp_d = IndexedPixmapTexture 46 101 8 8 txt_context_.transform IMAGE PALETTE
     sp_d_transform = sp_d.transform
@@ -102,6 +104,7 @@ class UI_Faceplate:
 
 
   update -> none:
+    // print "update pv=$(%.1f fp_.pv) sp=$(sp) output=$(fp_.output)"
     display_.remove pv_d
     pv_d = display_.filled_rectangle (txt_context_.with --color=CYAN) pv_d_x pv_d_ymin 4 (-fp_.pv).round
 
@@ -109,6 +112,6 @@ class UI_Faceplate:
     sp_d.set_transform new_transform
 
     display_.remove output_d
-    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+fp_.output/2) (bry-8)
+    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.output/2).round) (bry-8)
 
     display_.draw
