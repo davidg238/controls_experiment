@@ -65,11 +65,10 @@ class SimInput implements Module:
     return "SimInput $(id) $(inputs[0])"
 
   input -> float:
-    val := inputs[0].value
-    return val==null ? 50.0 : val
+    return inputs[0].value
 
   tick -> none:
-    outputs[0] = sim.call last input
+    outputs[0] = sim.call last inputs[0].value
     last = outputs[0]
 
 class SimOutput implements Module:
@@ -77,7 +76,7 @@ class SimOutput implements Module:
   inputs := List 1
   input_names := ["co"]
   outputs := [50.0]
-  output_names := ["out"]
+  output_names := ["sim_out"]
   
   constructor --.id:
 
@@ -129,10 +128,9 @@ class PID implements Module:
     deviation := pv-sp
   //  integral := (ks*kp2*deviation*dT)/Ti 
     proportional := (deviation - deviation_last)*ks*kp
-    print "deviation $(%.1f deviation) auto $(auto)"
+    // print "deviation $(%.1f deviation) auto $(auto)"
     if auto:
       setco_ (proportional + out_last) //  setco_ (integral + proportional + out_last)
-      print "PID $(id) prop: $(proportional) ks=$(ks) kp=$(kp) out_last=$(out_last)"
     else:
       setco_ manual_out
     deviation_last = deviation
@@ -225,6 +223,7 @@ class Faceplate implements Model Module:
     dependants.add dep
 
   changed -> none:
+    // print "FP pv $(%.2f pv) out $(%.2f output)"
     dependants.do:
       it.update
 

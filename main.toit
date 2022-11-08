@@ -79,7 +79,7 @@ bump_sp -> none:
 */
 run_control -> none:
 
-  scheme = Scheme --dT=5000
+  scheme = Scheme --dT=250
 
   /* 
   simulated tank level (out), 0-100 gallons
@@ -87,8 +87,9 @@ run_control -> none:
   fill valve (in)(0-100%) results in 0-20gpm inflow
   */  
   a_sim = :: | last in|
-    loss := random 4 22  
-    out := last + (in/5 - loss)*(scheme.dT/60_000)
+    loss := random 4 12  
+    out := last + (in/5 - loss)*(scheme.dT/60_000.0)
+    // print "$(%.2f last) $(%.2f in) $(loss) $(%.2f scheme.dT/60_000.0) $(%.2f (in/5 - loss)*(scheme.dT/60_000.0)) "
     min (max 0.0 out) 100.0  // clamp to 0-100
 
   scheme.add (SimInput --id="tank_lvl" --sim=a_sim)      //0
@@ -101,7 +102,7 @@ run_control -> none:
   
   scheme.connect --from="tank_lvl" --out="out" --to="pid01" --in="pv"
   scheme.connect --from="pid01" --out="out" --to="fill_vlv" --in="co"
-  scheme.connect --from="fill_vlv" --out="out" --to="tank_lvl" --in="sim_in"
+  scheme.connect --from="fill_vlv" --out="sim_out" --to="tank_lvl" --in="sim_in"
   scheme.connect --from="fp01" --out="sp" --to="pid01" --in="sp"
   scheme.connect --from="fp01" --out="auto" --to="pid01" --in="auto"
   scheme.connect --from="tank_lvl" --out="out" --to="fp01" --in="pv"  

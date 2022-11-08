@@ -31,8 +31,12 @@ class UIManager:
     faceplate := UI_Faceplate --display=display_ --fp=fp
     faceplate.draw
 
+    while true:
+      dispatchEvents
+
   dispatchEvents -> none:
     event = events.receive
+    print event
     if event is WeatherEvent:
   //      showWeather event.map
         return
