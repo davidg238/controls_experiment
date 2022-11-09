@@ -1,7 +1,8 @@
 import font show *
 import font_x11_adobe.typewriter_08 as typ_08
+import font_x11_adobe.typewriter_10 as typ_10
 import pixel_display show *
-import pixel_display.texture show TEXT_TEXTURE_ALIGN_RIGHT TEXT_TEXTURE_ALIGN_CENTER
+import pixel_display.texture show TEXT_TEXTURE_ALIGN_RIGHT TEXT_TEXTURE_ALIGN_CENTER TEXT_TEXTURE_ALIGN_LEFT
 import pixel_display.true_color show WHITE BLACK get_rgb IndexedPixmapTexture
 
 
@@ -9,6 +10,7 @@ import .control_scheme show *
 import .events show *
 
 TYP_08 ::= Font [typ_08.ASCII]
+TYP_10 ::= Font [typ_10.ASCII]
 IMAGE ::= #[
     0, 0, 0, 2, 2, 2, 2, 2,
     0, 0, 2, 2, 2, 2, 2, 2,
@@ -27,6 +29,7 @@ PALETTE ::= #[
 
 
 CYAN ::= get_rgb 0x00 0xFF 0xFF
+RED ::= get_rgb 0xFF 0x00 0x00
 GREEN ::= get_rgb 0x00 0xFF 0x00
 
 class UI_Barchart:
@@ -40,6 +43,7 @@ class UI_Faceplate:
   pv_d := null
   sp_d := null
   output_d := null
+  auto_d := null
 
   pv_d_x := 40 
   pv_d_ymin := 110
@@ -67,6 +71,7 @@ class UI_Faceplate:
     draw_outline
     draw_scale
     draw_ticks
+    draw_auto_manual
 
     pv_d = display_.filled_rectangle (txt_context_.with --color=CYAN) pv_d_x pv_d_ymin 4 (-fp_.pv).round
     output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.output/2).round) (bry-8)
@@ -77,8 +82,10 @@ class UI_Faceplate:
 
     display_.draw
 
-    while true:
-      sleep --ms=1000
+  draw_auto_manual -> none:
+    auto_d = auto?
+      display_.text (txt_context_.with --font=TYP_10 --color=GREEN --alignment=TEXT_TEXTURE_ALIGN_LEFT) tlx+5 pv_d_ymin "A":
+      display_.text (txt_context_.with --font=TYP_10 --color=RED --alignment=TEXT_TEXTURE_ALIGN_LEFT) tlx+5 pv_d_ymin "M"
 
   draw_outline -> none:
     display_.line txt_context_ tlx tly brx tly 
@@ -108,10 +115,13 @@ class UI_Faceplate:
     display_.remove pv_d
     pv_d = display_.filled_rectangle (txt_context_.with --color=CYAN) pv_d_x pv_d_ymin 4 (-fp_.pv).round
 
-    new_transform = sp_d_transform.translate 0 -sp
+    new_transform = sp_d_transform.translate 0 (-fp_.sp).round
     sp_d.set_transform new_transform
 
     display_.remove output_d
     output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.output/2).round) (bry-8)
 
+    display_.remove auto_d
+    draw_auto_manual
+    
     display_.draw

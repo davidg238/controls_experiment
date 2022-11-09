@@ -7,6 +7,7 @@ import encoding.json
 import .events show *
 import .control_scheme show *
 import .ui_elements show *
+import .jog show *
 
 
 
@@ -17,7 +18,7 @@ class UIManager:
   // The elements in the control scheme to be displayed
   fp/Faceplate  
   bar/Barchart
-
+  je := null
   event := null
 
   constructor --display/TrueColorPixelDisplay --.events/Channel --.fp/Faceplate --.bar/Barchart:
@@ -36,20 +37,17 @@ class UIManager:
 
   dispatchEvents -> none:
     event = events.receive
-    print event
-    if event is WeatherEvent:
-  //      showWeather event.map
-        return
     if event is JogEvent:
-  //      showTxt event.stringify
-        return
-    if event is RangeEvent:
-  //      showRange event.map
-        return
-    if event is MotionEvent:
-  //      showTxt "m"
-        return
-
+      if event.u:
+        fp.inc_sp
+      else if event.d:
+        fp.dec_sp
+      else if event.l and not fp.auto:
+        fp.dec_op_co
+      else if event.r and not fp.auto:
+        fp.inc_op_co
+      else if event.s:
+        fp.toggle_auto
 
 
   

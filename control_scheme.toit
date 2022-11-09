@@ -57,7 +57,7 @@ class SimInput implements Module:
   outputs := List 1
   output_names := ["out"]
   sim /Lambda?
-  last := 50
+  input_1 := 50
   
   constructor --.id --.sim:
 
@@ -68,8 +68,8 @@ class SimInput implements Module:
     return inputs[0].value
 
   tick -> none:
-    outputs[0] = sim.call last inputs[0].value
-    last = outputs[0]
+    outputs[0] = sim.call input_1 input
+    input_1 = outputs[0]
 
 class SimOutput implements Module:
   id /string
@@ -92,7 +92,7 @@ class SimOutput implements Module:
 class PID implements Module:
   id /string
   inputs := List 4
-  input_names := ["pv", "sp", "auto", "op_out"]
+  input_names := ["pv", "sp", "auto", "op_co"]
   outputs := List 1
   output_names := ["out"]
 
@@ -188,8 +188,8 @@ class Faceplate implements Model Module:
   dependants /List := []
   inputs := List 2  // from the control scheme to the operator
   input_names := ["pv", "a_out"]
-  outputs := [60.0, true] // from the operator to the control scheme
-  output_names := ["sp", "auto"]
+  outputs := [60.0, true, 50.0] // from the operator to the control scheme
+  output_names := ["sp", "auto", "op_co"]
   every_ticks /int := 4
   n := 0
 
@@ -205,11 +205,32 @@ class Faceplate implements Model Module:
   output -> float:
     return inputs[1].value
 
+  sp -> float:
+    return outputs[0]
+    
   sp= val/float -> none:
     outputs[0] = val
 
+  auto -> bool:
+    return outputs[1]
+
   auto= val/bool -> none:
     outputs[1] = val
+
+  toggle_auto -> none:
+    outputs[1] = not outputs[1]
+    changed
+
+  op_co -> float:
+    return outputs[2]
+
+  inc_op_co -> none:
+    min (max 0 (outputs[2] + 5.0)) 100
+    changed
+
+  dec_op_co -> none:
+    min (max 0 (outputs[0] - 5.0)) 100
+    changed
 
   // Only update the display a fraction of the loop cycle time.
   tick -> none:
@@ -218,12 +239,19 @@ class Faceplate implements Model Module:
       n = 0
       changed
 
+  inc_sp -> none:
+    sp = min (max 0 (outputs[0] + 5)) 100
+    changed
+
+  dec_sp -> none:
+    sp = min (max 0 (outputs[0] - 5)) 100
+    changed
 // Model interface -----------------------------------------------------------
   addDependant dep/any -> none:
     dependants.add dep
 
   changed -> none:
-    // print "FP pv $(%.2f pv) out $(%.2f output)"
+    print "FP pv $(%.2f pv) out $(%.2f output)"
     dependants.do:
       it.update
 

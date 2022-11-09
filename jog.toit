@@ -35,13 +35,12 @@ class Jog5WaySwitch:
         if 0 == up_.get:     ucount++ else: ucount = 0
         if 0 == down_.get:   dcount++ else: dcount = 0
         if 0 == select_.get: scount++ else: scount = 0
-
         if 2 == lcount: aChannel.send JogEvent.left
         if 2 == rcount: aChannel.send JogEvent.right
         if 2 == ucount: aChannel.send JogEvent.up
         if 2 == dcount: aChannel.send JogEvent.down
         if 2 == scount: aChannel.send JogEvent.select
 
-        sleep --ms=20
+        sleep --ms=100
 
     

@@ -89,7 +89,6 @@ run_control -> none:
   a_sim = :: | last in|
     loss := random 4 12  
     out := last + (in/5 - loss)*(scheme.dT/60_000.0)
-    // print "$(%.2f last) $(%.2f in) $(loss) $(%.2f scheme.dT/60_000.0) $(%.2f (in/5 - loss)*(scheme.dT/60_000.0)) "
     min (max 0.0 out) 100.0  // clamp to 0-100
 
   scheme.add (SimInput --id="tank_lvl" --sim=a_sim)      //0
@@ -105,9 +104,10 @@ run_control -> none:
   scheme.connect --from="fill_vlv" --out="sim_out" --to="tank_lvl" --in="sim_in"
   scheme.connect --from="fp01" --out="sp" --to="pid01" --in="sp"
   scheme.connect --from="fp01" --out="auto" --to="pid01" --in="auto"
+  scheme.connect --from="fp01" --out="op_co" --to="pid01" --in="op_co"
   scheme.connect --from="tank_lvl" --out="out" --to="fp01" --in="pv"  
   scheme.connect --from="pid01" --out="out" --to="fp01" --in="a_out"  
   scheme.connect --from="tank_lvl" --out="out" --to="bc01" --in="in0"
-  ((scheme.module_for --id="pid01") as PID).tune --ks=-1 --kp=10.0 --ki=0.0
+  ((scheme.module_for --id="pid01") as PID).tune --ks=-1 --kp=1.0 --ki=0.0
   
   scheme.run
