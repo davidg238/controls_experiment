@@ -1,3 +1,6 @@
+// Copyright 2022 Ekorau LLC
+
+
 import gpio
 import monitor show *
 import .events show JogEvent

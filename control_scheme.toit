@@ -1,3 +1,5 @@
+// Copyright 2022 Ekorau LLC
+
 interface Module:
   id -> string
   inputs -> List
@@ -96,18 +98,23 @@ class PID implements Module:
   outputs := List 1
   output_names := ["out"]
 
-  ks /int := 1
-  kp /float := 0.0
-  kp2 /float := 1.0
+  ks /int := -1 // direct acting 1, reverse acting -1
+  kp /float := 1.0
+  kp2 /float := 0.0
+  spio /bool := true // integral only on setpoint change
+  ti_ /float := 1.0
+  dT /int := 250
 
   out_min := 0.0
   out_max := 100.0
-  dT /int? // in ms
 
-  deviation_last /float := 0.0
+  pv_last /float := 0.0
+  dev_last /float := 0.0
   out_last /float := 0.0
 
-  constructor --.id --.dT/int:
+  n := 0
+
+  constructor --.id --.ks=-1 --.dT/int:
 
 // ----------------------------------------------------------------------------
 // Inputs
@@ -115,35 +122,42 @@ class PID implements Module:
     return inputs[0].value
 
   sp -> float:
-    return inputs[1].value
+    return auto? inputs[1].value: pv
   
   auto -> bool:
     return inputs[2].value
 
-  manual_out -> float:
+  op_co -> float:
     return inputs[3].value
 
 // Module interface ----------------------------------------------------------
   tick -> none:
-    deviation := pv-sp
-  //  integral := (ks*kp2*deviation*dT)/Ti 
-    proportional := (deviation - deviation_last)*ks*kp
-    // print "deviation $(%.1f deviation) auto $(auto)"
-    if auto:
-      setco_ (proportional + out_last) //  setco_ (integral + proportional + out_last)
-    else:
-      setco_ manual_out
-    deviation_last = deviation
+    dev := pv-sp
+    p1 := dev - dev_last
+    dev_last = dev
+    p2 := pv - pv_last
+    p3 := spio? p2: p1
+    proportional := p3*ks*kp
+    integral := dev*ks*kp2*(dT/1000.0)/ti_ //since dT is in milli-sec
+    a_o := proportional + integral + out_last
+    temp := setco_ (auto? a_o: op_co)
+    report p1 p2 p3 proportional integral a_o  // must be called in the tick method, 'cause it ticks
+    out_last = temp // because of the report call
 // ----------------------------------------------------------------------------
+  setco_ val/float -> float:
+    return outputs[0] = min (max out_min val) out_max
+
+  tune --.kp=1.0 --ti/int --.ks/int --.spio=true -> none:
+    kp2 = kp==0.0? 1.0: kp
+    ti_ = ti * 1.0
+
   stringify -> string:
     return "PID $(id)"
 
-  setco_ val/float -> none:
-    outputs[0] = min (max out_min val) out_max
-    out_last = outputs[0]
-
-  tune --.ks/int --.kp/float --ki=float -> none:
-    kp2 = ki
+  report p1 p2 p3 proportional integral a_o-> none:
+    n += 1
+    if n % 10 == 0:
+      print "pv $(%.1f pv) sp $(%.1f sp) p1 $(%.3f p1) p2 $(%.1f p2) p3 $(%.1f p3) P $(%.1f proportional) I $(%.3f integral) o $(%.1f a_o) o-1 $(%.1f out_last)" //  a/m $(auto) op_co $(op_co)
 
 class Barchart implements Model Module:
   id /string
@@ -188,7 +202,7 @@ class Faceplate implements Model Module:
   dependants /List := []
   inputs := List 2  // from the control scheme to the operator
   input_names := ["pv", "a_out"]
-  outputs := [60.0, true, 50.0] // from the operator to the control scheme
+  outputs := [50.0, true, 50.0] // from the operator to the control scheme
   output_names := ["sp", "auto", "op_co"]
   every_ticks /int := 4
   n := 0
@@ -202,7 +216,7 @@ class Faceplate implements Model Module:
   pv -> float:
     return inputs[0].value
 
-  output -> float:
+  a_out -> float:
     return inputs[1].value
 
   sp -> float:
@@ -225,33 +239,36 @@ class Faceplate implements Model Module:
     return outputs[2]
 
   inc_op_co -> none:
-    min (max 0 (outputs[2] + 5.0)) 100
+    outputs[2] = min (max 0.0 (outputs[2] + 5.0)) 100.0
     changed
 
   dec_op_co -> none:
-    min (max 0 (outputs[0] - 5.0)) 100
+    outputs[2] = min (max 0.0 (outputs[2] - 5.0)) 100.0
     changed
 
   // Only update the display a fraction of the loop cycle time.
   tick -> none:
+    if auto:
+      outputs[2] = a_out
+
     n += 1
     if n > every_ticks:
       n = 0
       changed
 
   inc_sp -> none:
-    sp = min (max 0 (outputs[0] + 5)) 100
+    sp = min (max 0.0 (outputs[0] + 5)) 100.0
     changed
 
   dec_sp -> none:
-    sp = min (max 0 (outputs[0] - 5)) 100
+    sp = min (max 0.0 (outputs[0] - 5)) 100.0
     changed
 // Model interface -----------------------------------------------------------
   addDependant dep/any -> none:
     dependants.add dep
 
   changed -> none:
-    print "FP pv $(%.2f pv) out $(%.2f output)"
+    // print "FP pv $(%.2f pv) out $(%.2f op_co)"
     dependants.do:
       it.update
 

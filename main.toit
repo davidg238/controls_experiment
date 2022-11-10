@@ -1,4 +1,4 @@
-// Copyright 2021 Ekorau LLC
+// Copyright 2022 Ekorau LLC
 
 import encoding.json
 import gpio
@@ -7,7 +7,6 @@ import gpio
 import .ui_tftfactory show TFT_factory
 import .ui_uimanager show UIManager
 import .jog show Jog5WaySwitch
-import .events show WeatherEvent RangeEvent MotionEvent
 
 import .control_scheme show *
 
@@ -34,10 +33,7 @@ scheme := null
 a_sim := null
 
 main:
-
   task:: jog_task
-  // task:: motion_task
-  // task:: bump_sp
   task:: run_control
   task:: display_task
 
@@ -51,32 +47,11 @@ jog_task:
           --select = 33
   jog.eventTo events  // there is a loop here
 
-motion_task:
-  led.set 0
-  while true:
-    motion.wait_for 1
-    led.set 1
-    sleep --ms=2000
-    // eventscheme.send MotionEvent
-    led.set 0
-
-
 display_task:
   //For reference, Nokia 2330 128x160
   print "start task, display"
   uiManager.run
 
-
-  /* Assume have 100gal irrigation buffer tank, filled via a valve that can deliver 0-20gpm.
-    Outlet varies randomly between 5-15gpm.
-    Run loop every 6 sec.
-  */
-/*  
-bump_sp -> none:
-  while true:
-    sp = random 15 85
-    sleep --ms=180000
-*/
 run_control -> none:
 
   scheme = Scheme --dT=250
@@ -91,13 +66,13 @@ run_control -> none:
     out := last + (in/5 - loss)*(scheme.dT/60_000.0)
     min (max 0.0 out) 100.0  // clamp to 0-100
 
-  scheme.add (SimInput --id="tank_lvl" --sim=a_sim)      //0
-  scheme.add (PID --id="pid01" --dT=scheme.dT)          //1
-  scheme.add (SimOutput --id="fill_vlv")                //2
+  scheme.add (SimInput --id="tank_lvl" --sim=a_sim)     
+  scheme.add (PID --id="pid01" --dT=scheme.dT)          
+  scheme.add (SimOutput --id="fill_vlv")                
   fp = (Faceplate --id="fp01" --dT=scheme.dT)
-  scheme.add fp //3 
+  scheme.add fp 
   bar = (Barchart --id="bc01" --dT=scheme.dT)
-  scheme.add bar  //4
+  scheme.add bar  
   
   scheme.connect --from="tank_lvl" --out="out" --to="pid01" --in="pv"
   scheme.connect --from="pid01" --out="out" --to="fill_vlv" --in="co"
@@ -108,6 +83,6 @@ run_control -> none:
   scheme.connect --from="tank_lvl" --out="out" --to="fp01" --in="pv"  
   scheme.connect --from="pid01" --out="out" --to="fp01" --in="a_out"  
   scheme.connect --from="tank_lvl" --out="out" --to="bc01" --in="in0"
-  ((scheme.module_for --id="pid01") as PID).tune --ks=-1 --kp=1.0 --ki=0.0
+  ((scheme.module_for --id="pid01") as PID).tune --kp=10.0 --ti=100 --ks=-1 --spio=false
   
   scheme.run

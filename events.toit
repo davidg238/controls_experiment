@@ -1,14 +1,6 @@
+// Copyright 2022 Ekorau LLC
+
 class MotionEvent:
-
-class WeatherEvent:
-  map/Map
-
-  constructor.changed .map/Map:
-
-class RangeEvent:
-  map/Map
-
-  constructor.changed .map/Map:
 
 class JogEvent:
   l  := false

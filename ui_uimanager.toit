@@ -1,3 +1,5 @@
+// Copyright 2022 Ekorau LLC
+
 import font show *
 import pixel_display show *
 import pixel_display.true_color show WHITE BLACK

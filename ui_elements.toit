@@ -1,3 +1,5 @@
+// Copyright 2022 Ekorau LLC
+
 import font show *
 import font_x11_adobe.typewriter_08 as typ_08
 import font_x11_adobe.typewriter_10 as typ_10
@@ -72,20 +74,35 @@ class UI_Faceplate:
     draw_scale
     draw_ticks
     draw_auto_manual
+    draw_pv
+    draw_sp
+    draw_a_out
 
+    display_.draw
+
+
+  draw_pv -> none:
     pv_d = display_.filled_rectangle (txt_context_.with --color=CYAN) pv_d_x pv_d_ymin 4 (-fp_.pv).round
-    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.output/2).round) (bry-8)
 
+  draw_sp -> none:
+    create_sp
+    move_sp
+
+  move_sp -> none:
+    sp_d.set_transform (sp_d_transform.translate 0 (-fp_.sp+5).round)
+
+  create_sp -> none:
     sp_d = IndexedPixmapTexture 46 101 8 8 txt_context_.transform IMAGE PALETTE
     sp_d_transform = sp_d.transform
     display_.add sp_d
 
-    display_.draw
+  draw_a_out -> none:
+    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.a_out/2).round) (bry-8)
 
   draw_auto_manual -> none:
-    auto_d = auto?
+    auto_d = fp_.auto?
       display_.text (txt_context_.with --font=TYP_10 --color=GREEN --alignment=TEXT_TEXTURE_ALIGN_LEFT) tlx+5 pv_d_ymin "A":
-      display_.text (txt_context_.with --font=TYP_10 --color=RED --alignment=TEXT_TEXTURE_ALIGN_LEFT) tlx+5 pv_d_ymin "M"
+      display_.text (txt_context_.with --font=TYP_10 --color=RED   --alignment=TEXT_TEXTURE_ALIGN_LEFT) tlx+5 pv_d_ymin "M"
 
   draw_outline -> none:
     display_.line txt_context_ tlx tly brx tly 
@@ -111,17 +128,15 @@ class UI_Faceplate:
 
 
   update -> none:
-    // print "update pv=$(%.1f fp_.pv) sp=$(sp) output=$(fp_.output)"
     display_.remove pv_d
-    pv_d = display_.filled_rectangle (txt_context_.with --color=CYAN) pv_d_x pv_d_ymin 4 (-fp_.pv).round
+    draw_pv
 
-    new_transform = sp_d_transform.translate 0 (-fp_.sp).round
-    sp_d.set_transform new_transform
+    move_sp
 
     display_.remove output_d
-    output_d = display_.line (txt_context_.with --color=GREEN) (tlx) (bry-8) (tlx+(fp_.output/2).round) (bry-8)
+    draw_a_out
 
     display_.remove auto_d
     draw_auto_manual
-    
+     
     display_.draw
