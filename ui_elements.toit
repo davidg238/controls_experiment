@@ -59,9 +59,6 @@ class UI_Faceplate:
   txt_context_ := ?
   output_context_ := ?
 
-  sp_d_transform := null
-  new_transform := null
-
   constructor --display/TrueColorPixelDisplay --fp/Faceplate:
     display_ = display
     fp_ = fp
@@ -89,11 +86,10 @@ class UI_Faceplate:
     move_sp
 
   move_sp -> none:
-    sp_d.set_transform (sp_d_transform.translate 0 (-fp_.sp+5).round)
+    sp_d.move_to (pv_d_x + 5) (pv_d_ymin - (fp_.sp+5).round)
 
   create_sp -> none:
     sp_d = IndexedPixmapTexture 46 101 8 8 txt_context_.transform IMAGE PALETTE
-    sp_d_transform = sp_d.transform
     display_.add sp_d
 
   draw_a_out -> none:
