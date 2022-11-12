@@ -10,6 +10,7 @@ import .events show *
 import .control_scheme show *
 import .ui_elements show *
 import .jog show *
+import .pubsub show *
 
 
 
@@ -17,21 +18,21 @@ class UIManager:
 
   display_/TrueColorPixelDisplay
   events/Channel
-  // The elements in the control scheme to be displayed
-  fp/Faceplate  
-  bar/Barchart
-  je := null
   event := null
+  cmd := ""
+  pubsub_/PubsubServiceClient
+  faceplate /UI_Faceplate? := null
 
-  constructor --display/TrueColorPixelDisplay --.events/Channel --.fp/Faceplate --.bar/Barchart:
+  constructor --display/TrueColorPixelDisplay --.events/Channel --pubsub/PubsubServiceClient:
     display_ = display
+    pubsub_ = pubsub
 
   run -> none:
     display_.background = BLACK
     display_.remove_all
     display_.draw
 
-    faceplate := UI_Faceplate --display=display_ --fp=fp
+    faceplate = UI_Faceplate --display=display_ --pubsub=pubsub_
     faceplate.draw
 
     while true:
@@ -41,15 +42,18 @@ class UIManager:
     event = events.receive
     if event is JogEvent:
       if event.u:
-        fp.inc_sp
+        cmd = "spi"
       else if event.d:
-        fp.dec_sp
-      else if event.l and not fp.auto:
-        fp.dec_op_co
-      else if event.r and not fp.auto:
-        fp.inc_op_co
+        cmd = "spd"
+      else if event.l and not faceplate.auto:
+        cmd = "cod"
+      else if event.r and not faceplate.auto:
+        cmd = "coi"
       else if event.s:
-        fp.toggle_auto
-
+        cmd = "!a"
+      else:
+        cmd = "."
+      //print "fp01/cmd $cmd"
+      pubsub_.publish "fp01/cmds" cmd
 
   

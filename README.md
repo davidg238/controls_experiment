@@ -49,8 +49,18 @@ class Wire:
 so the pv value for pid01 is resolved at runtime via a series of message sends, rather than any lookup via Maps.
 The process scheme just iterates over the modules, sending `tick` to each, where they update their outputs based on their inputs.
 
-A very crude user interface comprising a single Faceplate, is defined for the 128x128 TFT display.  To communicate with the user interface, a Faceplate (an engineering term) module is defined in the control scheme, to allow variables to be displayed and user input gathered.  An observer pattern is used, between the Faceplate and UI_Faceplate.  In [ui_elements.toit](https://github.com/davidg238/controls_experiment/blob/master/ui_elements.toit) the class UI_Faceplate is responsible for drawing the Faceplate on the display and responding to update messages.  The display and jog shuttle events are handled in [ui_manager.toit](https://github.com/davidg238/controls_experiment/blob/master/ui_uimanager.toit).
+A very crude user interface comprising a single Faceplate, is defined for the 128x128 TFT display.  To communicate with the user interface, a Faceplate (an engineering term) module is defined in the control scheme, to allow variables to be displayed and user input gathered.  <s>An observer pattern is used, between the Faceplate and UI_Faceplate.</s><small>(0.6.0)</small>  In [ui_elements.toit](https://github.com/davidg238/controls_experiment/blob/master/ui_elements.toit) the class UI_Faceplate is responsible for drawing the Faceplate on the display and responding to update messages.  The display and jog shuttle events are handled in [ui_manager.toit](https://github.com/davidg238/controls_experiment/blob/master/ui_uimanager.toit).
 
 The PID algorithm used to control the tank level is shown schematically in [pid_block.pdf](https://github.com/davidg238/controls_experiment/blob/master/pid_block.pdf), implemented in the PID class in [control_scheme.toit](https://github.com/davidg238/controls_experiment/blob/master/control_scheme.toit).  It provides for auto/manual control transitions, options on SP tracking and does not suffer from "integral windup".
 
-Containers and [pubsub v2](https://gist.github.com/kasperl/93aa561cf24f6430d0440ea01bd3e5c2) could be used to refactor this demo, puting the controls in one container and the UI, whether to a local screen or web UI, in other containers.
+In v0.6.0, the application was refactored to use containers.  The containers comprise:  
+  - pubsub broker, for message pub/sub between containers
+  - controls, where the the I/O and controls execute
+  - UI, shown as a small TFT PID faceplate
+
+This necessitated changing the observer pattern previously used between the UI `UI_Faceplate` to control scheme `Faceplate`, to communications via pubsub.  
+The control scheme executes in the controls containers, subscribing to commands from and publishing value changes to, the UI container.  
+Looking at the code, it would be straightforward to introduce an alternate (and/or concurrent) UI, via say a webpage or CLI, with no change to the controls container.
+
+For ease of use, on Linux you can run the dev_install.sh script to install and run the application.  
+Uninstall the monitor container, `jag container uninstall monitor`, if you do not want the prints on the console.

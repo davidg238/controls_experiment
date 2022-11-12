@@ -1,3 +1,6 @@
+## 0.6.0 - 2022-11-11
+Partitioned with containers; used pubsub
+
 ## 0.5.2 - 2022-11-10
 Revise SP update, with move_to
 
