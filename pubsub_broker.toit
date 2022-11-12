@@ -7,10 +7,9 @@ import .pubsub
 client_ ::= PubsubServiceClient
 
 main:
-  spawn::
-    service := PubsubServiceDefinition
-    service.install
-    service.uninstall --wait
+  service := PubsubServiceDefinition
+  service.install
+  service.uninstall --wait
 
 subscribe topic/string -> Subscription:
   return client_.subscribe topic
